@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda Function to get hospital details based on location or place name
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.11
+    Architectures:
+    - x86_64
+Resources:
+  HospitalFinderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HospitalFinderFunction
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Environment:
+        Variables:
+          GOOGLE_API_KEY:
+            Ref: GoogleApiKey
+          OPENAI_API_KEY:
+            Ref: OpenAiApiKey
+      Events:
+        LocationPost:
+          Type: Api
+          Properties:
+            Path: /location
+            Method: post
+            RestApiId:
+              Ref: ApiGateway
+        PlacePost:
+          Type: Api
+          Properties:
+            Path: /place
+            Method: post
+            RestApiId:
+              Ref: ApiGateway
+    Metadata:
+      SamResourceId: HospitalFinderFunction
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: HospitalFinderApi
+      Description: API for Hospital Finder
+      StageName: Prod
+      Cors:
+        AllowOrigin: '''*'''
+        AllowMethods: '''GET,POST,OPTIONS'''
+        AllowHeaders: '''Content-Type,Authorization'''
+        MaxAge: 86400
+Parameters:
+  GoogleApiKey:
+    Type: String
+    Description: The API key for Google API
+  OpenAiApiKey:
+    Type: String
+    Description: The API key for OpenAI
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL for the Hospital Finder API
+    Value:
+      Fn::Sub: https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod
+  LambdaFunctionArn:
+    Description: ARN of the Hospital Finder Lambda Function
+    Value:
+      Fn::GetAtt:
+      - HospitalFinderFunction
+      - Arn
